@@ -19,7 +19,11 @@ interface Props {
 
 const MatchInfo: React.FC<Props> = ({ matchData, updateMatchData, updateNestedData }) => {
   const nav = useNavigate();
-  const isValidTeam = !!matchData.match.teamNumber && matchData.match.teamNumber.length <= 5;
+  // Validation: Must have team number, length <= 5, and MUST be in the israelTeams list
+  const isValidTeam = !!matchData.match.teamNumber && 
+                      matchData.match.teamNumber.length <= 5 && 
+                      israelTeams.includes(matchData.match.teamNumber);
+  
   const canProceed = isValidTeam && !!matchData.match.startingPosition;
 
   const showHeader = !!matchData.match.teamNumber && (matchData.match.number ?? 0) > 0;
@@ -39,6 +43,7 @@ const MatchInfo: React.FC<Props> = ({ matchData, updateMatchData, updateNestedDa
   };
 
   const handleTeamInputChange = (event: React.SyntheticEvent, newInputValue: string) => {
+      // Allow typing, but validation will fail if not in list
       if (newInputValue.length <= 5) {
           updateNestedData('match.teamNumber', newInputValue);
       }
@@ -66,17 +71,25 @@ const MatchInfo: React.FC<Props> = ({ matchData, updateMatchData, updateNestedDa
             overflowX: 'hidden'
           }}
         >
+          {/* Header Grid: HeaderBox | Spacer/Nav | HeaderBox(Hidden) */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: { xs: 1, sm: 1.5 } }}>
-            <Box>{showHeader && (<MatchHeaderBox teamNumber={matchData.match.teamNumber} matchNumber={matchData.match.number} />)}</Box>
+            {/* Left Header Box: Only show if valid data exists, else placeholder to keep layout */}
+            <Box sx={{ minWidth: 60 }}>
+                {showHeader && (<MatchHeaderBox teamNumber={matchData.match.teamNumber} matchNumber={matchData.match.number} />)}
+            </Box>
+            
+            {/* Center: Chip Nav */}
             <Box sx={{ display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
               <TopChipNav centered size='medium' disabled />
             </Box>
-            <Box sx={{ visibility: 'hidden' }}>
+            
+            {/* Right: Hidden spacer to balance center */}
+            <Box sx={{ visibility: 'hidden', minWidth: 60 }}>
               {showHeader && (<MatchHeaderBox teamNumber={matchData.match.teamNumber} matchNumber={matchData.match.number} />)}
             </Box>
           </Box>
 
-          <Typography variant='h6' align='center' sx={{ fontWeight: 700 }}>General Scouter</Typography>
+          <Typography variant='h6' align='center' sx={{ fontWeight: 700, mt: 2 }}>General Scouter</Typography>
           <Divider />
 
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -116,6 +129,8 @@ const MatchInfo: React.FC<Props> = ({ matchData, updateMatchData, updateNestedDa
                         {...params} 
                         label="Team #" 
                         type="number"
+                        error={!!matchData.match.teamNumber && !isValidTeam}
+                        helperText={!!matchData.match.teamNumber && !isValidTeam ? "Invalid Team" : ""}
                     />
                 )}
              />

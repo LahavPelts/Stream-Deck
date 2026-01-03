@@ -47,7 +47,7 @@ const EndgamePage: React.FC<Props> = ({ matchData, updateNestedData, resetForm }
   const handleDone = () => {
       resetForm();
       setShowQr(false);
-      nav('/info');
+      nav('/'); // Redirect to Home
   }
 
   return (

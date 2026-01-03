@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import theme from './theme';
 import Layout from './components/Layout';
@@ -9,6 +9,9 @@ import MatchInfo from './pages/scout/MatchInfo';
 import AutoPage from './pages/scout/AutoPage';
 import TeleopPage from './pages/scout/TeleopPage';
 import EndgamePage from './pages/scout/EndgamePage';
+import MyForms from './pages/MyForms';
+import DataManager from './pages/DataManager';
+import Scans from './pages/Scans';
 import { MatchData, INITIAL_MATCH_DATA } from './types/schema';
 import { setByPath } from './utils/calculations';
 
@@ -16,38 +19,43 @@ const Placeholder = ({ title }: { title: string }) => (
     <div style={{ padding: '2rem' }}><h1>{title}</h1><p>Under Construction</p></div>
 );
 
-const App: React.FC = () => {
-  // Try to load current match from local storage to prevent data loss on refresh
-  const savedState = localStorage.getItem('current_match_state');
-  const [matchData, setMatchData] = useState<MatchData>(
-      savedState ? JSON.parse(savedState) : { ...INITIAL_MATCH_DATA, timestamp: Date.now(), id: `match_${Date.now()}` }
-  );
+// Internal component to handle navigation logic properly within Router context
+const AppRoutes: React.FC = () => {
+    const navigate = useNavigate();
 
-  // Auto-save to local storage whenever matchData changes
-  useEffect(() => {
-    localStorage.setItem('current_match_state', JSON.stringify(matchData));
-  }, [matchData]);
+    // Try to load current match from local storage to prevent data loss on refresh
+    const savedState = localStorage.getItem('current_match_state');
+    const [matchData, setMatchData] = useState<MatchData>(
+        savedState ? JSON.parse(savedState) : { ...INITIAL_MATCH_DATA, timestamp: Date.now(), id: `match_${Date.now()}` }
+    );
 
-  // Wrapper for updating state via path (lodash.set style)
-  const updateNestedData = (path: string, value: any) => {
-    setMatchData(prev => setByPath(prev, path, value));
-  };
+    // Auto-save to local storage whenever matchData changes
+    useEffect(() => {
+        localStorage.setItem('current_match_state', JSON.stringify(matchData));
+    }, [matchData]);
 
-  // Deprecated wrapper for direct updates, kept for compatibility if needed
-  const updateMatchData = (data: Partial<MatchData>) => {
-      setMatchData(prev => ({ ...prev, ...data }));
-  };
+    // Wrapper for updating state via path (lodash.set style)
+    const updateNestedData = (path: string, value: any) => {
+        setMatchData(prev => setByPath(prev, path, value));
+    };
 
-  const resetForm = () => {
-      const newState = { ...INITIAL_MATCH_DATA, timestamp: Date.now(), id: `match_${Date.now()}` };
-      setMatchData(newState);
-      localStorage.setItem('current_match_state', JSON.stringify(newState));
-  };
+    // Deprecated wrapper for direct updates, kept for compatibility if needed
+    const updateMatchData = (data: Partial<MatchData>) => {
+        setMatchData(prev => ({ ...prev, ...data }));
+    };
 
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
+    const resetForm = () => {
+        const newState = { ...INITIAL_MATCH_DATA, timestamp: Date.now(), id: `match_${Date.now()}` };
+        setMatchData(newState);
+        localStorage.setItem('current_match_state', JSON.stringify(newState));
+    };
+
+    const handleEditMatch = (match: MatchData) => {
+        setMatchData(match);
+        navigate('/info');
+    };
+
+    return (
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -60,13 +68,23 @@ const App: React.FC = () => {
             <Route path="/endgame" element={<EndgamePage matchData={matchData} updateNestedData={updateNestedData} resetForm={resetForm} />} />
             
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/forms" element={<Placeholder title="My Forms" />} />
-            <Route path="/scans" element={<Placeholder title="Scans" />} />
-            <Route path="/data" element={<Placeholder title="Data Manager" />} />
+            <Route path="/forms" element={<MyForms onEditMatch={handleEditMatch} />} />
+            <Route path="/scans" element={<Scans />} />
+            <Route path="/data" element={<DataManager />} />
+            
             <Route path="/games" element={<Placeholder title="Games" />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
+    );
+}
+
+const App: React.FC = () => {
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <AppRoutes />
       </Router>
     </ThemeProvider>
   );
